@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -26,7 +27,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    testOptions { unitTests.isReturnDefaultValues = true }
 }
 
 dependencies {
@@ -40,7 +45,14 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
     implementation(libs.compose.material3.windowsize)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+    implementation(libs.work.runtime)
+    implementation(libs.navigation.compose)
+    implementation(libs.documentfile)
     debugImplementation(libs.compose.ui.tooling)
+    testImplementation(libs.junit4)
 }
 
 // Hard constraint: the app must never hold the INTERNET permission (DESIGN.md §1).
@@ -59,4 +71,8 @@ androidComponents {
         }
         afterEvaluate { tasks.findByName("process${name}MainManifest")?.finalizedBy(check) }
     }
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
