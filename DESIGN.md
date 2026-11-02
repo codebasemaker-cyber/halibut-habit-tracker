@@ -4,7 +4,7 @@ Offline Android app that replaces a printed monthly Excel tracker
 (`Sleep_and_habit_tracker_YYYY-MM.xlsx`, sheets "Habit Tracker" and "Sleep Tracker").
 Target device: Pixel 9 Pro Fold. Installed by APK (not Play Store).
 
-Status: **approved design, v1 in progress.** Decisions below are final unless marked *assumption*.
+Status: **v1.0.0 implemented.** Decisions below are final unless marked *assumption*.
 
 ---
 
@@ -27,7 +27,7 @@ Status: **approved design, v1 in progress.** Decisions below are final unless ma
 | Background | WorkManager (auto-backup), AlarmManager exact alarms (reminders) |
 | Files | Storage Access Framework, persisted tree URI; zip + RFC 4180 CSV written in-house |
 | PDF (later) | `android.graphics.pdf.PdfDocument` |
-| Modules | `:core:domain` (pure Kotlin/JVM: recurrence + scoring, no Android), `:data` (Room, backup), `:app` (UI) |
+| Modules | `:core:domain` (pure Kotlin/JVM: recurrence + scoring, no Android); `:app` with packages `data` (Room), `backup`, `notify`, `ui` |
 
 ## 3. Section 1 — Habit Tracker (scored)
 
@@ -177,7 +177,7 @@ tracker_value(trackerId, date, seq, kind{MAIN,NAP}, num?, bool?, text?, timeMinu
 setting_version(key, effectiveFrom, value, updatedAt)   -- weekStart, dashCounts
 setting(key, value, updatedAt)                          -- non-scoring prefs (weight unit, …)
 tombstone(tableName, rowId, deletedAt)
-backup_log(at, uri, ok, error?)
+-- last backup time/error are kept as device-only rows in `setting` and never overwritten by a restore
 ```
 
 ## 7. Notifications
@@ -185,6 +185,8 @@ backup_log(at, uri, ok, error?)
 - Per-task reminder time (exact alarms via `USE_EXACT_ALARM`, fine for sideloaded APK).
   Skipped at fire time if the task is already done. Same-minute reminders are grouped.
 - Every-N tasks remind daily while overdue.
+- What "needs doing" means at reminder time: daily — not marked today; X-per-week — goal not yet met
+  and not done today; every-N — due today or overdue; weekly/monthly — only on the due date, if unmarked.
 - Optional end-of-day summary; backup reminder when the last good backup is older than N+1 days.
 - `POST_NOTIFICATIONS` requested on first run (Android 13+). Alarms rescheduled on boot,
   time/zone change and app update.

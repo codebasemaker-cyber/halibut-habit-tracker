@@ -149,7 +149,9 @@ private fun DailyGrid(vm: MainViewModel, snap: AppSnapshot, g: MonthGrid, today:
                 g.dayColumns.forEach { c ->
                     val sub = c.header.thresholdLabel ?: when (c.header.type) {
                         ScheduleType.X_PER_WEEK -> "${c.weekResults.firstOrNull()?.goal ?: ""}×/wk"
-                        ScheduleType.EVERY_N -> "every-N"
+                        ScheduleType.EVERY_N -> snap.taskVersions[c.header.taskId]
+                            ?.lastOrNull { !LocalDate.parse(it.effectiveFrom).isAfter(g.month.atEndOfMonth()) }
+                            ?.intervalDays?.let { "every ${it}d" }
                         else -> null
                     }
                     RotatedHeader(c.header.name, cell, sub = sub)

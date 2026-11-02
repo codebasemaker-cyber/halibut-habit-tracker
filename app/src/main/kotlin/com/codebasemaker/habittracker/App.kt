@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 
 /** Manual dependency container; the app is small enough not to need a DI framework. */
-class App : Application() {
+open class App : Application() {
     lateinit var db: AppDatabase
         private set
     lateinit var repo: Repository

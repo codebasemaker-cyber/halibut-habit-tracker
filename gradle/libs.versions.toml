@@ -30,6 +30,13 @@ work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "work"
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentfile" }
 junit4 = { module = "junit:junit", version = "4.13.2" }
+robolectric = { module = "org.robolectric:robolectric", version = "4.14.1" }
+androidx-test-core = { module = "androidx.test:core-ktx", version = "1.6.1" }
+androidx-test-junit = { module = "androidx.test.ext:junit-ktx", version = "1.2.1" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+work-testing = { module = "androidx.work:work-testing", version.ref = "work" }
+coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version = "1.9.0" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
