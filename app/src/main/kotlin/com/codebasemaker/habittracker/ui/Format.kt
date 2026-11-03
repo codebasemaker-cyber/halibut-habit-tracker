@@ -7,6 +7,7 @@ import com.codebasemaker.habittracker.data.TrackerType
 import com.codebasemaker.habittracker.data.TrackerValueEntity
 import com.codebasemaker.habittracker.data.TrackerVersionEntity
 import com.codebasemaker.habittracker.data.toLocalDateTimeOrNull
+import com.codebasemaker.habittracker.domain.DateRange
 import com.codebasemaker.habittracker.domain.ScheduleType
 import com.codebasemaker.habittracker.domain.SleepEntry
 import com.codebasemaker.habittracker.domain.SleepKind
@@ -132,4 +133,24 @@ object Values {
 
     fun unitLabel(snap: AppSnapshot, v: TrackerVersionEntity): String? =
         if (isWeight(v)) snap.weightUnit else v.unit
+
+    /** One-line statistic for [tracker] over [range], as on the Summary tab and in the month PDF. */
+    fun monthSummary(snap: AppSnapshot, tracker: TrackerDef, range: DateRange): String {
+        val t = tracker
+        val type = TrackerType.valueOf(t.latest.type)
+        val nums = range.days.mapNotNull { numeric(snap, t, it) }.toList()
+        return when {
+            type == TrackerType.TEXT -> "${range.days.count { snap.valuesByKey[Triple(t.id, it.toString(), 0)] != null }} entries"
+            nums.isEmpty() -> "no entries"
+            type == TrackerType.CHECKBOX -> "${nums.count { it > 0 }} of ${nums.size} days"
+            type == TrackerType.TIME -> "avg ${Fmt.time(nums.average().toInt())} · ${nums.size} days"
+            type == TrackerType.TIME_RANGE || type == TrackerType.COMPUTED ->
+                "avg ${Fmt.hours(nums.average())} · min ${Fmt.hours(nums.min())} · max ${Fmt.hours(nums.max())}"
+            isWeight(t.latest) -> {
+                val conv = if (snap.weightUnit == "kg") nums.map { it / LB_PER_KG } else nums
+                "latest ${Fmt.num(conv.last())} ${snap.weightUnit} · change ${Fmt.num(conv.last() - conv.first())}"
+            }
+            else -> "avg ${Fmt.num(nums.average())} · min ${Fmt.num(nums.min())} · max ${Fmt.num(nums.max())} · ${nums.size} days"
+        }
+    }
 }
