@@ -59,14 +59,15 @@ bytecode, AGP 8.7.3, Gradle 8.14.3. Versions in `gradle/libs.versions.toml`.
   **Never commit it or `keystore.properties`** (both git-ignored). Updates must be signed with this
   key or they won't install over the existing app.
 - `keystore.properties` in the repo root: `storeFile`, `storePassword`, `keyAlias=halibut`, `keyPassword`.
-- Verify a built APK: `apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk`
+- Verify a built APK: `apksigner verify --print-certs app/build/outputs/apk/release/Halibut-<version>.apk`
   and compare the SHA-256 digest.
 
 ## Workflow
 
 - Bug fixes go on a branch with a PR and a test that reproduces the bug.
 - Every release bumps `versionCode` (+1) and `versionName` in `app/build.gradle.kts`, is signed with
-  the release key, tagged `vX.Y.Z`, and published as a GitHub release with `app-release.apk` attached.
+  the release key, tagged `vX.Y.Z`, and published as a GitHub release with `Halibut-X.Y.Z.apk` attached (the build names it so; debug builds
+  are `Halibut-X.Y.Z-debug.apk`). Releases up to v1.1.0 carry the older name `app-release.apk`.
 - Repo: `codebasemaker-cyber/halibut-habit-tracker` (public — nothing secret in commits or releases).
 
 ## Status / not yet verified on a real device
