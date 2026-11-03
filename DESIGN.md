@@ -26,7 +26,7 @@ Status: **v1.0.0 implemented.** Decisions below are final unless marked *assumpt
 | Dates | `java.time` (minSdk 34) |
 | Background | WorkManager (auto-backup), AlarmManager exact alarms (reminders) |
 | Files | Storage Access Framework, persisted tree URI; zip + RFC 4180 CSV written in-house |
-| PDF (later) | `android.graphics.pdf.PdfDocument` |
+| PDF | `android.graphics.pdf.PdfDocument` (one-page month export, §9.10) |
 | Modules | `:core:domain` (pure Kotlin/JVM: recurrence + scoring, no Android); `:app` with packages `data` (Room), `backup`, `notify`, `ui` |
 
 ## 3. Section 1 — Habit Tracker (scored)
@@ -213,6 +213,11 @@ tombstone(tableName, rowId, deletedAt)
 5. Tasks — list/detail, version timeline, "Change from date…", archive, delete.
 6. Trackers — same as tasks.
 7. Month summary — per-task breakdown, Section 2 stats (basis for PDF).
+10. Month PDF (v1.1) — "PDF" on the Month screen saves `habit-tracker-YYYY-MM.pdf` through the
+    system save dialog (no network). One US Letter landscape page holds the whole Month tab: one row
+    per day with the daily-grid habits and that day's values side by side; a right column with
+    Weekly (plus X-per-week results), Monthly and the Summary; the score in the header. Columns
+    and the right column shrink to fit, so it is always one page.
 8. Backup & restore.
 9. Settings & first run (permissions, backup folder, seed from sheet).
 

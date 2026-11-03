@@ -8,6 +8,7 @@ plus unscored daily values (sleep, steps, weigh-in, …).
 - **All data stays on the phone.** Backups are `.zip` files (one CSV per table) written to a folder you choose,
   e.g. one synced by Syncthing. Restore can replace everything or merge.
 - **Adaptive.** Month grid on the inner screen, day checklist on the cover screen; both on any size.
+- **Monthly printout.** "PDF" on the Month screen saves the whole month (habits, values, weekly, monthly, summary) on one Letter landscape page.
 
 See [DESIGN.md](DESIGN.md) for the full specification.
 
@@ -36,7 +37,7 @@ keyAlias=halibut
 keyPassword=…
 ```
 
-The Robolectric screenshot tests write PNGs to `app/build/screenshots/`.
+The Robolectric screenshot tests write PNGs to `app/build/screenshots/`, including previews of the month PDF page (`pdf-*.png`).
 
 ## Layout
 
@@ -47,3 +48,4 @@ The Robolectric screenshot tests write PNGs to `app/build/screenshots/`.
 | `app/…/backup` | Zip/CSV backup, replace & merge restore, auto-backup worker. |
 | `app/…/notify` | Exact-alarm reminders, end-of-day summary, backup notifications. |
 | `app/…/ui` | Compose screens: month grid, day checklist, editors, tasks, trackers, settings. |
+| `app/…/export` | One-page month PDF (`MonthPdf`, drawn by `MonthPage`). |

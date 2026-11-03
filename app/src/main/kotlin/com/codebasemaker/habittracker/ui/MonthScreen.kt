@@ -1,5 +1,8 @@
 package com.codebasemaker.habittracker.ui
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,12 +32,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -47,6 +52,10 @@ import com.codebasemaker.habittracker.domain.MonthGrid
 import com.codebasemaker.habittracker.domain.ScheduleType
 import com.codebasemaker.habittracker.domain.WeekCalendar
 import com.codebasemaker.habittracker.domain.toRange
+import com.codebasemaker.habittracker.export.MonthPdf
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
 private val CELL_SIZES = listOf(32.dp, 40.dp, 48.dp)
@@ -62,11 +71,24 @@ fun MonthScreen(vm: MainViewModel, snap: AppSnapshot) {
     var zoom by rememberSaveable { mutableIntStateOf(1) }
     var pickMonth by rememberBool()
     val cellSize = CELL_SIZES[zoom]
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val pdfLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/pdf")) { uri ->
+        val g = grid
+        if (uri != null && g != null) scope.launch {
+            val msg = runCatching {
+                withContext(Dispatchers.IO) { ctx.contentResolver.openOutputStream(uri)!!.use { MonthPdf.write(it, snap, g, today) } }
+                "Saved ${Fmt.month(g.month)} PDF."
+            }.getOrElse { "PDF export failed: ${it.message}" }
+            Toast.makeText(ctx, msg, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             StepperHeader(Fmt.month(month), { vm.setMonth(month.minusMonths(1)) }, { vm.setMonth(month.plusMonths(1)) }, { pickMonth = true })
             Spacer(Modifier.weight(1f))
+            TextButton(onClick = { pdfLauncher.launch(MonthPdf.fileName(month)) }, enabled = grid?.month == month) { Text("PDF") }
             TextButton(onClick = { zoom = (zoom + 1) % CELL_SIZES.size }) { Text("Zoom ${zoom + 1}/3") }
         }
         PrimaryTabRow(selectedTabIndex = tab) {
@@ -355,21 +377,7 @@ private fun SummaryPanel(snap: AppSnapshot, g: MonthGrid) {
         }
         SectionTitle("Values")
         snap.trackers.filter { t -> range.days.any { t.isActiveOn(it) } }.forEach { t ->
-            val type = TrackerType.valueOf(t.latest.type)
-            val nums = range.days.mapNotNull { Values.numeric(snap, t, it) }.toList()
-            val desc = when {
-                type == TrackerType.TEXT -> "${range.days.count { snap.valuesByKey[Triple(t.id, it.toString(), 0)] != null }} entries"
-                nums.isEmpty() -> "no entries"
-                type == TrackerType.CHECKBOX -> "${nums.count { it > 0 }} of ${nums.size} days"
-                type == TrackerType.TIME -> "avg ${Fmt.time(nums.average().toInt())} · ${nums.size} days"
-                type == TrackerType.TIME_RANGE || type == TrackerType.COMPUTED ->
-                    "avg ${Fmt.hours(nums.average())} · min ${Fmt.hours(nums.min())} · max ${Fmt.hours(nums.max())}"
-                Values.isWeight(t.latest) -> {
-                    val conv = if (snap.weightUnit == "kg") nums.map { it / LB_PER_KG } else nums
-                    "latest ${Fmt.num(conv.last())} ${snap.weightUnit} · change ${Fmt.num(conv.last() - conv.first())}"
-                }
-                else -> "avg ${Fmt.num(nums.average())} · min ${Fmt.num(nums.min())} · max ${Fmt.num(nums.max())} · ${nums.size} days"
-            }
+            val desc = Values.monthSummary(snap, t, range)
             Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                 Text(t.latest.name, Modifier.weight(1f))
                 Text(desc, style = MaterialTheme.typography.bodySmall)
