@@ -153,6 +153,7 @@ fun TaskEditorScreen(vm: MainViewModel, snap: AppSnapshot, taskId: String, onDon
     var from by rememberSaveable { mutableStateOf(monthStart.toString()) }
     var pick by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberBool()
+    var startError by rememberSaveable { mutableStateOf<String?>(null) }
 
     if (!isNew && task == null) { onDone(); return }
 
@@ -190,6 +191,12 @@ fun TaskEditorScreen(vm: MainViewModel, snap: AppSnapshot, taskId: String, onDon
             Text("Reminder", Modifier.weight(1f))
             if (f.reminder != null) TextButton(onClick = { pick = "reminder" }) { Text(Fmt.time(f.reminder)) }
             Switch(f.reminder != null, { on -> form = f.copy(reminder = if (on) 9 * 60 else null) })
+        }
+
+        if (!isNew && task != null) {
+            SectionTitle("Starts")
+            PickerField("Starts on", Fmt.long(task.firstEffective), { pick = "start" })
+            startError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         }
 
         SectionTitle(if (isNew) "Starts" else "Apply")
@@ -251,6 +258,16 @@ fun TaskEditorScreen(vm: MainViewModel, snap: AppSnapshot, taskId: String, onDon
 
     when (pick) {
         "from" -> DatePickDialog(LocalDate.parse(from), { from = it.toString() }, { pick = null }, "Effective from")
+        "start" -> task?.let { t ->
+            DatePickDialog(t.firstEffective, { d ->
+                vm.launch {
+                    val moved = vm.repo.moveTaskStart(taskId, d)
+                    startError = if (moved) null else "Must be before the next change (${Fmt.short(t.sortedVersions[1].effectiveFrom)})."
+                    // Keep the form's every-N first due date in step, so a later Save doesn't put the old one back.
+                    if (moved && f.anchor == t.firstEffective) form = f.copy(anchor = d)
+                }
+            }, { pick = null }, "Starts on")
+        }
         "versionFrom" -> selected?.let { s ->
             DatePickDialog(LocalDate.parse(s.effectiveFrom), { d ->
                 vm.launch { vm.repo.saveTaskVersion(f.toEntity(s, d)) }

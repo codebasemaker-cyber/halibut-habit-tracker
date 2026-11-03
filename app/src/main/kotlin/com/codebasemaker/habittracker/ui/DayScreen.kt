@@ -53,6 +53,8 @@ import java.time.YearMonth
 
 private data class DayItem(
     val task: Task,
+    /** Schedule on the item's own day; kept here because `date` can move on before [items] is recomputed. */
+    val type: ScheduleType,
     val name: String,
     val sub: String,
     /** Date the mark is stored on (the day itself, or the week/month due date). */
@@ -85,7 +87,7 @@ fun DayScreen(vm: MainViewModel, snap: AppSnapshot) {
             if (date != today) TextButton(onClick = { vm.setDate(today) }) { Text("Today") }
         }
         LazyColumn(Modifier.weight(1f), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 32.dp)) {
-            val groups = items.groupBy { it.task.versionOn(date)!!.schedule.type }
+            val groups = items.groupBy { it.type }
             listOf(
                 ScheduleType.DAILY to "Daily",
                 ScheduleType.X_PER_WEEK to "This week (X per week)",
@@ -110,7 +112,7 @@ fun DayScreen(vm: MainViewModel, snap: AppSnapshot) {
                 }
             }
             if (items.isEmpty()) item { EmptyHint("No tasks on this day.") }
-            if (items.any { it.task.versionOn(date)?.schedule?.type == ScheduleType.DAILY }) item {
+            if (items.any { it.type == ScheduleType.DAILY }) item {
                 OutlinedButton(onClick = { confirmClose = true }, modifier = Modifier.padding(16.dp)) { Text("Close out day (blank dailies → ✕)") }
             }
             val trackers = snap.trackers.sortedBy { it.sortOrder }.filter { it.isActiveOn(date) }
@@ -165,7 +167,7 @@ private fun dayItems(snap: AppSnapshot, date: LocalDate, today: LocalDate): List
             }
             else -> pts
         }
-        DayItem(t, v.name + (v.thresholdLabel?.let { "  $it" } ?: ""), sub, markDate, cell, weekInst)
+        DayItem(t, v.schedule.type, v.name + (v.thresholdLabel?.let { "  $it" } ?: ""), sub, markDate, cell, weekInst)
     }
 }
 
