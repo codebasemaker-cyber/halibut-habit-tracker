@@ -16,8 +16,9 @@ installed by sideloaded APK. Replaces a printed monthly Excel sheet.
 - **No `INTERNET` permission.** The manifest strips it (`tools:node="remove"`) and the
   `check<Variant>NoInternet` task in `app/build.gradle.kts` fails the build if it reappears.
   Android cloud backup is disabled (`data_extraction_rules.xml`).
-- All data stays on the device. Backups (zip of one CSV per table + `manifest.csv`) are the only
-  export and must round-trip losslessly — `BackupTest` checks this. Any new column/table must be
+- All data stays on the device. Exports are user-initiated files only: backups (zip of one CSV per
+  table + `manifest.csv`), which must round-trip losslessly — `BackupTest` checks this — and the
+  one-page month PDF (`export/MonthPdf`, DESIGN.md §9.10). Any new column/table must be
   added to the backup and to that test.
 - Scores are always computed by the engine, never stored or cached.
 - Room schema changes need a version bump and a migration (schemas are exported to `app/schemas/`);
@@ -37,12 +38,13 @@ bytecode, AGP 8.7.3, Gradle 8.14.3. Versions in `gradle/libs.versions.toml`.
 | `app/…/data` | Room entities (UUID ids, ISO date strings, `updatedAt` on every row, tombstones), `AppDao`, `Repository`, `AppSnapshot`. |
 | `app/…/backup` | `Csv` (`\N` = null), `BackupManager` (REPLACE with safety backup, or MERGE: newer `updatedAt` wins, tombstones respected), `BackupWorker`. |
 | `app/…/notify` | `ReminderLogic`, `ReminderScheduler` (one exact alarm per reminder minute, end-of-day summary, reschedule on boot/time/zone/update), `Notifier`. |
+| `app/…/export` | `MonthPdf` / `MonthPage`: the whole Month tab on one US Letter landscape page. `MonthPdfTest` writes previews to `app/build/screenshots/pdf-*.png` (PdfDocument itself cannot run under Robolectric). |
 | `app/…/ui` | `MonthScreen`, `DayScreen`, `Editors` (cell / week-result / value / sleep), Tasks, Trackers, Settings, `AppRoot` (rail on wide, bottom bar on compact; starts on Month unfolded, Day on cover screen). |
 
 ## Build & test
 
 ```bash
-./gradlew :core:domain:test :app:testDebugUnitTest   # 35 tests, all must pass
+./gradlew :core:domain:test :app:testDebugUnitTest   # 45 tests (v1.1.0), all must pass
 ./gradlew :app:assembleDebug
 ./gradlew :app:assembleRelease                        # needs keystore.properties
 ```
@@ -69,10 +71,10 @@ bytecode, AGP 8.7.3, Gradle 8.14.3. Versions in `gradle/libs.versions.toml`.
 
 ## Status / not yet verified on a real device
 
-v1.0.0 (commit `127f8f2`) is installed on the Pixel 9 Pro Fold. Unverified: fold/unfold behaviour,
+Releases: v1.0.0 (`127f8f2`), v1.0.1 (`dec1ae9`), v1.1.0 (`3d500d0`); next versionCode is 4. Unverified on the
+Pixel 9 Pro Fold: the month PDF file write, fold/unfold behaviour,
 notifications and exact alarms, backup folder picker + persisted permission, auto-backup timing.
 
 ## Deferred
 
-- Monthly summary PDF (structure in DESIGN.md; `MonthGrid` and values already expose the data).
 - Health Connect + auto-complete-from-tracker (`task_version.autoRule` is reserved for it).
