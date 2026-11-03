@@ -40,6 +40,13 @@ android {
             signingConfig = signingConfigs.findByName("release")
         }
     }
+    // APKs are named Halibut-<version>.apk (debug builds: Halibut-<version>-debug.apk).
+    applicationVariants.all {
+        val suffix = if (buildType.name == "release") "" else "-${buildType.name}"
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName = "Halibut-$versionName$suffix.apk"
+        }
+    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

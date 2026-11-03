@@ -14,7 +14,7 @@ See [DESIGN.md](DESIGN.md) for the full specification.
 
 ## Install
 
-Download `app-release.apk` on the phone and open it. Android asks once to allow installs from
+Download `Halibut-<version>.apk` (e.g. `Halibut-1.1.0.apk`) from the latest release on the phone and open it. Android asks once to allow installs from
 your browser or Files app. Later versions install over it **only if signed with the same key**,
 so keep the release keystore safe (it is not in this repo).
 
