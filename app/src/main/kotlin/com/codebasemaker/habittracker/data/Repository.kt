@@ -120,6 +120,20 @@ class Repository(private val db: AppDatabase) {
         touchTask(version.taskId)
     }
 
+    /**
+     * Moves the task's start (its first version's effective date). An every-N first due date that
+     * matched the old start moves with it. Returns false if [start] is not before the next version.
+     */
+    suspend fun moveTaskStart(taskId: String, start: LocalDate): Boolean = db.withTransaction {
+        val vs = dao.versionsOf(taskId).sortedBy { it.effectiveFrom }
+        val first = vs.firstOrNull() ?: return@withTransaction false
+        if (vs.getOrNull(1)?.let { !start.isBefore(LocalDate.parse(it.effectiveFrom)) } == true) return@withTransaction false
+        val anchor = if (first.anchorDate == first.effectiveFrom) start.toString() else first.anchorDate
+        dao.upsertTaskVersion(first.copy(effectiveFrom = start.toString(), anchorDate = anchor, updatedAt = now()))
+        touchTask(taskId)
+        true
+    }
+
     suspend fun deleteTaskVersion(id: String, taskId: String) = db.withTransaction {
         if (dao.versionsOf(taskId).size > 1) deleteTaskVersionRow(id)
         touchTask(taskId)
@@ -173,6 +187,15 @@ class Repository(private val db: AppDatabase) {
             .filter { it.effectiveFrom == version.effectiveFrom && it.id != version.id }
             .forEach { dao.deleteTrackerVersion(it.id); dao.upsertTombstone(TombstoneEntity("tracker_version", it.id, now())) }
         dao.upsertTrackerVersion(version.copy(updatedAt = now()))
+    }
+
+    /** Moves the tracker's start (its first version's effective date); false if not before the next version. */
+    suspend fun moveTrackerStart(trackerId: String, start: LocalDate): Boolean = db.withTransaction {
+        val vs = dao.trackerVersionsOf(trackerId).sortedBy { it.effectiveFrom }
+        val first = vs.firstOrNull() ?: return@withTransaction false
+        if (vs.getOrNull(1)?.let { !start.isBefore(LocalDate.parse(it.effectiveFrom)) } == true) return@withTransaction false
+        dao.upsertTrackerVersion(first.copy(effectiveFrom = start.toString(), updatedAt = now()))
+        true
     }
 
     suspend fun deleteTrackerVersion(id: String, trackerId: String) = db.withTransaction {

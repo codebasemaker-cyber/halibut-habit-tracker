@@ -129,6 +129,7 @@ fun TrackerEditorScreen(vm: MainViewModel, snap: AppSnapshot, trackerId: String,
     var from by rememberSaveable { mutableStateOf(YearMonth.now().atDay(1).toString()) }
     var pick by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmDelete by rememberBool()
+    var startError by rememberSaveable { mutableStateOf<String?>(null) }
     if (!isNew && tracker == null) { onDone(); return }
 
     val originalType = selected?.let { TrackerType.valueOf(it.type) }
@@ -160,6 +161,11 @@ fun TrackerEditorScreen(vm: MainViewModel, snap: AppSnapshot, trackerId: String,
                 }
             }
             else -> {}
+        }
+        if (!isNew && tracker != null) {
+            SectionTitle("Starts")
+            PickerField("Starts on", Fmt.long(tracker.firstEffective), { pick = "start" })
+            startError?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
         }
         SectionTitle(if (isNew) "Starts" else "Apply")
         if (!isNew) {
@@ -204,6 +210,14 @@ fun TrackerEditorScreen(vm: MainViewModel, snap: AppSnapshot, trackerId: String,
     }
     when (pick) {
         "from" -> DatePickDialog(LocalDate.parse(from), { from = it.toString() }, { pick = null }, "Effective from")
+        "start" -> tracker?.let { t ->
+            DatePickDialog(t.firstEffective, { d ->
+                vm.launch {
+                    startError = if (vm.repo.moveTrackerStart(trackerId, d)) null
+                        else "Must be before the next change (${Fmt.short(LocalDate.parse(versions[1].effectiveFrom))})."
+                }
+            }, { pick = null }, "Starts on")
+        }
         "archive" -> DatePickDialog(LocalDate.now(), { d -> vm.launch { vm.repo.setTrackerArchived(trackerId, d) } }, { pick = null }, "Archive from")
     }
     if (confirmDelete) ConfirmDialog("Delete permanently?", "This removes the tracker and every value recorded for it.", "Delete",

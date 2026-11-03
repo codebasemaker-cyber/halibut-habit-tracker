@@ -333,4 +333,27 @@ class EngineTest {
             assertEquals(8.0, totalSleepHours(listOf(main, nap), d(10, 5), chicago))
         }
     }
+
+    @Nested
+    inner class MonthsBeforeTasksStart {
+        // First run in November seeds every task effective Nov 1 (Repository.seed).
+        private val nov1 = d(11, 1)
+        private val tasks = listOf(
+            task("daily", Schedule.Daily, 1, from = nov1),
+            task("xpw", Schedule.XPerWeek(3), 5, from = nov1),
+            task("weekly", Schedule.Weekly, 5, from = nov1),
+            task("everyN", Schedule.EveryN(4, nov1), 3, from = nov1),
+            task("monthly", Schedule.Monthly, 20, from = nov1),
+        )
+
+        @Test
+        fun `months before the tasks start build without crashing`() {
+            val b = builder(today = d(11, 3))
+            for (m in listOf(OCT, YearMonth.of(2026, 9), YearMonth.of(2025, 11))) {
+                val g = b.build(m, tasks, marks = emptyList())
+                assertTrue(g.dayColumns.isEmpty(), "$m day columns")
+                assertEquals(0.0, g.score.month.possible, "$m possible")
+            }
+        }
+    }
 }
