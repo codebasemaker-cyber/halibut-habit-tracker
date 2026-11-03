@@ -1,26 +1,49 @@
-# Habit Tracker
+# Halibut Habit Tracker
 
-Offline Android habit & value tracker for the Pixel 9 Pro Fold. Replaces a printed monthly
-spreadsheet: a scored habit grid (daily, weekly, X-per-week, every-N-days, monthly tasks)
+Offline Android habit & value tracker for the Pixel 9 Pro Fold. It replaces a printed monthly
+spreadsheet: a scored habit grid (daily, weekly, X-per-week, every-N-days and monthly tasks)
 plus unscored daily values (sleep, steps, weigh-in, …).
 
-- No network access (the `INTERNET` permission is stripped and checked at build time).
-- All data stays on the device; backups are `.zip` files written to a folder you choose.
+- **No network access.** The `INTERNET` permission is stripped and the build fails if it reappears.
+- **All data stays on the phone.** Backups are `.zip` files (one CSV per table) written to a folder you choose,
+  e.g. one synced by Syncthing. Restore can replace everything or merge.
+- **Adaptive.** Month grid on the inner screen, day checklist on the cover screen; both on any size.
 
 See [DESIGN.md](DESIGN.md) for the full specification.
+
+## Install
+
+Download `app-release.apk` on the phone and open it. Android asks once to allow installs from
+your browser or Files app. Later versions install over it **only if signed with the same key**,
+so keep the release keystore safe (it is not in this repo).
 
 ## Build
 
 Requirements: JDK 17+ and the Android SDK (platform 35).
 
 ```bash
-./gradlew :core:domain:test      # scoring engine tests
-./gradlew :app:assembleDebug     # app/build/outputs/apk/debug/app-debug.apk
+./gradlew :core:domain:test :app:testDebugUnitTest   # engine, backup round-trip and screenshot tests
+./gradlew :app:assembleDebug                          # debug APK
+./gradlew :app:assembleRelease                        # needs keystore.properties (see below)
 ```
 
-## Modules
+`keystore.properties` (git-ignored) in the project root:
 
-| Module | Contents |
+```
+storeFile=/path/to/halibut-release.jks
+storePassword=…
+keyAlias=halibut
+keyPassword=…
+```
+
+The Robolectric screenshot tests write PNGs to `app/build/screenshots/`.
+
+## Layout
+
+| Path | Contents |
 |---|---|
 | `core/domain` | Pure Kotlin: weeks, recurrence, scoring, month grid, sleep math. No Android. |
-| `app` | Compose UI (in progress). |
+| `app/…/data` | Room entities, DAO, repository, mapping to the domain model. |
+| `app/…/backup` | Zip/CSV backup, replace & merge restore, auto-backup worker. |
+| `app/…/notify` | Exact-alarm reminders, end-of-day summary, backup notifications. |
+| `app/…/ui` | Compose screens: month grid, day checklist, editors, tasks, trackers, settings. |
